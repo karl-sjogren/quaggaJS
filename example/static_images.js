@@ -13,16 +13,16 @@ $(function() {
                 debug: true,
                 inputStream: { name: "Test",
                     type: "ImageStream",
-                    length: 3,
-                    size: 800
+                    length: 5,
+                    size: 1600
                 },
                 locator: {
-                    patchSize: "medium",
+                    patchSize: "small",
                     halfSample: false,
                     debug: {
                         showCanvas: true,
                         showPatches: true,
-                        showFoundPatches: false,
+                        showFoundPatches: true,
                         showSkeleton: false,
                         showLabels: false,
                         showPatchLabels: false,

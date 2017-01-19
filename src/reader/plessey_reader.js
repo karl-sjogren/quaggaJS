@@ -5,10 +5,6 @@ function PlesseyReader(opts) {
     opts = merge(getDefaulConfig(), opts);
     BarcodeReader.call(this, opts);
     this.barSpaceRatio = [1, 1];
-    if (opts.normalizeBarSpaceWidth) {
-        this.SINGLE_CODE_ERROR = 0.38;
-        this.AVG_CODE_ERROR = 0.09;
-    }
 }
 
 function getDefaulConfig() {
@@ -53,32 +49,6 @@ var N = 1,
 PlesseyReader.prototype = Object.create(BarcodeReader.prototype, properties);
 PlesseyReader.prototype.constructor = PlesseyReader;
 
-PlesseyReader.prototype._matchPattern = function(counter, code) {
-    if (this.config.normalizeBarSpaceWidth) {
-        var i,
-            counterSum = [0, 0],
-            codeSum = [0, 0],
-            correction = [0, 0],
-            correctionRatio = this.MAX_CORRECTION_FACTOR,
-            correctionRatioInverse = 1 / correctionRatio;
-
-        for (i = 0; i < counter.length; i++) {
-            counterSum[i % 2] += counter[i];
-            codeSum[i % 2] += code[i];
-        }
-        correction[0] = codeSum[0] / counterSum[0];
-        correction[1] = codeSum[1] / counterSum[1];
-
-        correction[0] = Math.max(Math.min(correction[0], correctionRatio), correctionRatioInverse);
-        correction[1] = Math.max(Math.min(correction[1], correctionRatio), correctionRatioInverse);
-        this.barSpaceRatio = correction;
-        for (i = 0; i < counter.length; i++) {
-            counter[i] *= this.barSpaceRatio[i % 2];
-        }
-    }
-    return BarcodeReader.prototype._matchPattern.call(this, counter, code);
-};
-
 PlesseyReader.prototype._findPattern = function(pattern, offset, isWhite, tryHarder) {
     var counter = [],
         self = this,
@@ -93,7 +63,6 @@ PlesseyReader.prototype._findPattern = function(pattern, offset, isWhite, tryHar
         error,
         j,
         sum,
-        normalized,
         epsilon = self.AVG_CODE_ERROR;
 
     isWhite = isWhite || false;
@@ -200,7 +169,7 @@ PlesseyReader.prototype._findEnd = function() {
     return endInfo !== null ? self._verifyTrailingWhitespace(endInfo) : null;
 };
 
-PlesseyReader.prototype._decodeCode = function(start, coderange) {
+PlesseyReader.prototype._decodeCode = function(start) {
     var counter = [0, 0, 0, 0, 0, 0, 0, 0],
         i,
         self = this,
@@ -216,16 +185,12 @@ PlesseyReader.prototype._decodeCode = function(start, coderange) {
         code,
         error;
 
-    if (!coderange) {
-        coderange = self.CODE_PATTERN.length;
-    }
-
     for ( i = offset; i < self._row.length; i++) {
         if (self._row[i] ^ isWhite) {
             counter[counterPos]++;
         } else {
             if (counterPos === counter.length - 1) {
-                for (code = 0; code < coderange; code++) {
+                for (code = 0; code < self.CODE_PATTERN.length; code++) {
                     error = self._matchPattern(counter.filter((v, i) => i % 2 == 0), self.CODE_PATTERN[code]);
                     if (error < bestMatch.error) {
                         bestMatch.code = code;
