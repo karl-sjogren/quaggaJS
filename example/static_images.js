@@ -11,10 +11,11 @@ $(function() {
         config: {
             "default": {
                 debug: true,
+                numOfWorkers: 0,
                 inputStream: { name: "Test",
                     type: "ImageStream",
                     length: 5,
-                    size: 1600
+                    size: 1200
                 },
                 locator: {
                     patchSize: "small",
