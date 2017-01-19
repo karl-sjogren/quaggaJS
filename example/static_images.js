@@ -10,14 +10,29 @@ $(function() {
         },
         config: {
             "default": {
+                debug: true,
                 inputStream: { name: "Test",
                     type: "ImageStream",
-                    length: 10,
+                    length: 3,
                     size: 800
                 },
                 locator: {
                     patchSize: "medium",
-                    halfSample: true
+                    halfSample: false,
+                    debug: {
+                        showCanvas: true,
+                        showPatches: true,
+                        showFoundPatches: false,
+                        showSkeleton: false,
+                        showLabels: false,
+                        showPatchLabels: false,
+                        showRemainingPatchLabels: false,
+                        boxFromPatches: {
+                            showTransformed: false,
+                            showTransformedBox: false,
+                            showBB: false
+                        }
+                    }
                 }
             },
             "i2of5_reader": {
@@ -115,17 +130,29 @@ $(function() {
                 src: function(value) {
                     return "../test/fixtures/" + value + "/"
                 }
+            },
+            debug: {
+                drawBoundingBox: true,
+                showFrequency: true,
+                drawScanline: true,
+                showPattern: true
             }
         },
         state: {
             inputStream: {
-                src: "../test/fixtures/code_128/"
+                src: "../test/fixtures/plessey/"
             },
             decoder : {
                 readers : [{
-                    format: "code_128_reader",
+                    format: "plessey_reader",
                     config: {}
                 }]
+            },
+            debug: {
+                drawBoundingBox: true,
+                showFrequency: true,
+                drawScanline: true,
+                showPattern: true
             }
         }
     };
@@ -143,7 +170,7 @@ $(function() {
                 result.boxes.filter(function (box) {
                     return box !== result.box;
                 }).forEach(function (box) {
-                    Quagga.ImageDebug.drawPath(box, {x: 0, y: 1}, drawingCtx, {color: "green", lineWidth: 2});
+                    Quagga.ImageDebug.drawPath(box, {x: 0, y: 1}, drawingCtx, {color: "hotpink", lineWidth: 2});
                 });
             }
 

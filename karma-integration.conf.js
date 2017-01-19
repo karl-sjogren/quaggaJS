@@ -14,6 +14,9 @@ module.exports = function(config) {
             'test/test-main-integration.js': ['webpack']
         },
         webpack: {
+            entry: [
+                './src/quagga.js'
+            ],
             module: {
                 loaders: [{
                     test: /\.jsx?$/,
@@ -30,7 +33,7 @@ module.exports = function(config) {
             },
             plugins: [
                 new webpack.DefinePlugin({
-                    ENV: require(path.join(__dirname, './env/production'))
+                    ENV: require(path.join(__dirname, './env/development_node'))
                 })
             ]
         },

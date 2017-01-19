@@ -47,6 +47,7 @@ describe('decodeSingle', function () {
                 config.readers = readers;
                 Quagga.decodeSingle(config, function(result) {
                     console.log(sample.name);
+                    console.log(JSON.stringify(result));
                     expect(result.codeResult.code).to.equal(sample.result);
                     expect(result.codeResult.format).to.equal(sample.format);
                     callback();
@@ -56,7 +57,7 @@ describe('decodeSingle', function () {
             });
         });
     }
-
+/*
     describe("EAN", function() {
         var config = generateConfig(),
             testSet = [
@@ -65,7 +66,7 @@ describe('decodeSingle', function () {
                 {"name": "image-003.jpg", "result": "4006209700068"},
                 /* {"name": "image-004.jpg", "result": "9002233139084"}, */
                 /* {"name": "image-005.jpg", "result": "8004030044005"}, */
-                {"name": "image-006.jpg", "result": "4003626011159"},
+    /*            {"name": "image-006.jpg", "result": "4003626011159"},
                 {"name": "image-007.jpg", "result": "2111220009686"},
                 {"name": "image-008.jpg", "result": "9000275609022"},
                 {"name": "image-009.jpg", "result": "9004593978587"},
@@ -168,7 +169,7 @@ describe('decodeSingle', function () {
                 {"name": "image-003.jpg", "result": "CODE39"},
                 {"name": "image-004.jpg", "result": "QUAGGAJS"},
                 /* {"name": "image-005.jpg", "result": "CODE39"}, */
-                {"name": "image-006.jpg", "result": "2/4-8/16-32"},
+        /*        {"name": "image-006.jpg", "result": "2/4-8/16-32"},
                 {"name": "image-007.jpg", "result": "2/4-8/16-32"},
                 {"name": "image-008.jpg", "result": "CODE39"},
                 {"name": "image-009.jpg", "result": "2/4-8/16-32"},
@@ -215,7 +216,7 @@ describe('decodeSingle', function () {
                 {"name": "image-004.jpg", "result": "882428015343"},
                 {"name": "image-005.jpg", "result": "882428015343"},
                 /* {"name": "image-006.jpg", "result": "882428015046"}, */
-                {"name": "image-007.jpg", "result": "882428015084"},
+        /*        {"name": "image-007.jpg", "result": "882428015084"},
                 {"name": "image-008.jpg", "result": "882428015046"},
                 {"name": "image-009.jpg", "result": "039047013551"},
                 {"name": "image-010.jpg", "result": "039047013551"}
@@ -241,7 +242,7 @@ describe('decodeSingle', function () {
                 {"name": "image-007.jpg", "result": "03897425"},
                 {"name": "image-008.jpg", "result": "01264904"},
                 /*{"name": "image-009.jpg", "result": "01264904"},*/
-                {"name": "image-010.jpg", "result": "01264904"}
+          /*      {"name": "image-010.jpg", "result": "01264904"}
             ];
 
         testSet.forEach(function(sample) {
@@ -301,6 +302,32 @@ describe('decodeSingle', function () {
             ];
         testSet.forEach(function(sample) {
             sample.format = "i2of5";
+        });
+        _runTestSet(testSet, config);
+    });
+*/
+    describe("plessey", function() {
+        var config = {
+                inputStream: {
+                    size: 800,
+                    singleChannel: false
+                },
+                locator: {
+                    patchSize: "small",
+                    halfSample: false
+                },
+                numOfWorkers: 0,
+                decoder: {
+                    readers: ["plessey_reader"]
+                },
+                locate: true,
+                src: null
+            },
+            testSet = [
+                {"name": "image-001.jpg", "result": "2024101334429"}
+            ];
+        testSet.forEach(function(sample) {
+            sample.format = "plessey";
         });
         _runTestSet(testSet, config);
     });

@@ -157,6 +157,7 @@ BarcodeReader.prototype.decodePattern = function(pattern) {
     if (result) {
         result.format = self.FORMAT;
     }
+    console.info(result);
     return result;
 };
 

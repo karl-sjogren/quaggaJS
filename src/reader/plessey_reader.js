@@ -1,7 +1,7 @@
 import BarcodeReader from './barcode_reader';
 import {merge} from 'lodash';
 
-function I2of5Reader(opts) {
+function PlesseyReader(opts) {
     opts = merge(getDefaulConfig(), opts);
     BarcodeReader.call(this, opts);
     this.barSpaceRatio = [1, 1];
@@ -14,39 +14,46 @@ function I2of5Reader(opts) {
 function getDefaulConfig() {
     var config = {};
 
-    Object.keys(I2of5Reader.CONFIG_KEYS).forEach(function(key) {
-        config[key] = I2of5Reader.CONFIG_KEYS[key].default;
+    Object.keys(PlesseyReader.CONFIG_KEYS).forEach(function(key) {
+        config[key] = PlesseyReader.CONFIG_KEYS[key].default;
     });
     return config;
 }
 
 var N = 1,
-    W = 3,
+    W = 2.7,
+    T = 5,
     properties = {
-        START_PATTERN: {value: [N, N, N, N]},
-        STOP_PATTERN: {value: [N, N, W]},
-        CODE_PATTERN: {value: [
-            [N, N, W, W, N],
-            [W, N, N, N, W],
-            [N, W, N, N, W],
-            [W, W, N, N, N],
-            [N, N, W, N, W],
-            [W, N, W, N, N],
-            [N, W, W, N, N],
-            [N, N, N, W, W],
-            [W, N, N, W, N],
-            [N, W, N, W, N]
+        START_PATTERN: { value: [W, W, N, W] },
+        STOP_PATTERN:  { value: [T, N, W, N, N] },
+        CODE_PATTERN:  { value: [
+            [N, N, N, N], // 0
+            [W, N, N, N], // 1
+            [N, W, N, N], // 2
+            [W, W, N, N], // 3
+            [N, N, W, N], // 4
+            [W, N, W, N], // 5
+            [N, W, W, N], // 6
+            [W, W, W, N], // 7
+            [N, N, N, W], // 8
+            [W, N, N, W], // 9
+            [N, W, N, W], // A
+            [W, W, N, W], // B
+            [N, N, W, W], // C
+            [W, N, W, W], // D
+            [N, W, W, W], // E
+            [W, W, W, W], // F
         ]},
         SINGLE_CODE_ERROR: {value: 0.78, writable: true},
         AVG_CODE_ERROR: {value: 0.38, writable: true},
         MAX_CORRECTION_FACTOR: {value: 5},
-        FORMAT: {value: "i2of5"}
+        FORMAT: {value: "plessey"}
     };
 
-I2of5Reader.prototype = Object.create(BarcodeReader.prototype, properties);
-I2of5Reader.prototype.constructor = I2of5Reader;
+PlesseyReader.prototype = Object.create(BarcodeReader.prototype, properties);
+PlesseyReader.prototype.constructor = PlesseyReader;
 
-I2of5Reader.prototype._matchPattern = function(counter, code) {
+PlesseyReader.prototype._matchPattern = function(counter, code) {
     if (this.config.normalizeBarSpaceWidth) {
         var i,
             counterSum = [0, 0],
@@ -72,7 +79,7 @@ I2of5Reader.prototype._matchPattern = function(counter, code) {
     return BarcodeReader.prototype._matchPattern.call(this, counter, code);
 };
 
-I2of5Reader.prototype._findPattern = function(pattern, offset, isWhite, tryHarder) {
+PlesseyReader.prototype._findPattern = function(pattern, offset, isWhite, tryHarder) {
     var counter = [],
         self = this,
         i,
@@ -88,7 +95,7 @@ I2of5Reader.prototype._findPattern = function(pattern, offset, isWhite, tryHarde
         sum,
         normalized,
         epsilon = self.AVG_CODE_ERROR;
-    debugger;
+
     isWhite = isWhite || false;
     tryHarder = tryHarder || false;
 
@@ -96,7 +103,7 @@ I2of5Reader.prototype._findPattern = function(pattern, offset, isWhite, tryHarde
         offset = self._nextSet(self._row);
     }
 
-    for ( i = 0; i < pattern.length; i++) {
+    for ( i = 0; i < pattern.length * 2; i++) {
         counter[i] = 0;
     }
 
@@ -109,7 +116,7 @@ I2of5Reader.prototype._findPattern = function(pattern, offset, isWhite, tryHarde
                 for ( j = 0; j < counter.length; j++) {
                     sum += counter[j];
                 }
-                error = self._matchPattern(counter, pattern);
+                error = self._matchPattern(counter.filter((v, i) => i % 2 == 1), pattern);
                 if (error < epsilon) {
                     bestMatch.error = error;
                     bestMatch.start = i - sum;
@@ -136,20 +143,19 @@ I2of5Reader.prototype._findPattern = function(pattern, offset, isWhite, tryHarde
     return null;
 };
 
-I2of5Reader.prototype._findStart = function() {
+PlesseyReader.prototype._findStart = function() {
     var self = this,
         leadingWhitespaceStart,
         offset = self._nextSet(self._row),
-        startInfo,
-        narrowBarWidth = 1;
+        startInfo;
 
     while (!startInfo) {
         startInfo = self._findPattern(self.START_PATTERN, offset, false, true);
         if (!startInfo) {
             return null;
         }
-        narrowBarWidth = Math.floor((startInfo.end - startInfo.start) / 4);
-        leadingWhitespaceStart = startInfo.start - narrowBarWidth * 10;
+
+        leadingWhitespaceStart = startInfo.start - (startInfo.end - startInfo.start);
         if (leadingWhitespaceStart >= 0) {
             if (self._matchRange(leadingWhitespaceStart, startInfo.start, 0)) {
                 return startInfo;
@@ -160,7 +166,7 @@ I2of5Reader.prototype._findStart = function() {
     }
 };
 
-I2of5Reader.prototype._verifyTrailingWhitespace = function(endInfo) {
+PlesseyReader.prototype._verifyTrailingWhitespace = function(endInfo) {
     var self = this,
         trailingWhitespaceEnd;
 
@@ -173,7 +179,7 @@ I2of5Reader.prototype._verifyTrailingWhitespace = function(endInfo) {
     return null;
 };
 
-I2of5Reader.prototype._findEnd = function() {
+PlesseyReader.prototype._findEnd = function() {
     var self = this,
         endInfo,
         tmp;
@@ -194,83 +200,98 @@ I2of5Reader.prototype._findEnd = function() {
     return endInfo !== null ? self._verifyTrailingWhitespace(endInfo) : null;
 };
 
-I2of5Reader.prototype._decodePair = function(counterPair) {
-    var i,
-        code,
-        codes = [],
-        self = this;
-
-    for (i = 0; i < counterPair.length; i++) {
-        code = self._decodeCode(counterPair[i]);
-        if (!code) {
-            return null;
-        }
-        codes.push(code);
-    }
-    return codes;
-};
-
-I2of5Reader.prototype._decodeCode = function(counter) {
-    var j,
+PlesseyReader.prototype._decodeCode = function(start, coderange) {
+    var counter = [0, 0, 0, 0, 0, 0, 0, 0],
+        i,
         self = this,
-        sum = 0,
-        normalized,
-        error,
-        epsilon = self.AVG_CODE_ERROR,
-        code,
+        offset = start,
+        isWhite = !self._row[offset],
+        counterPos = 0,
         bestMatch = {
             error: Number.MAX_VALUE,
             code: -1,
-            start: 0,
-            end: 0
-        };
+            start: start,
+            end: start
+        },
+        code,
+        error;
 
-    for ( j = 0; j < counter.length; j++) {
-        sum += counter[j];
+    if (!coderange) {
+        coderange = self.CODE_PATTERN.length;
     }
-    for (code = 0; code < self.CODE_PATTERN.length; code++) {
-        error = self._matchPattern(counter, self.CODE_PATTERN[code]);
-        if (error < bestMatch.error) {
-            bestMatch.code = code;
-            bestMatch.error = error;
+
+    for ( i = offset; i < self._row.length; i++) {
+        if (self._row[i] ^ isWhite) {
+            counter[counterPos]++;
+        } else {
+            if (counterPos === counter.length - 1) {
+                for (code = 0; code < coderange; code++) {
+                    error = self._matchPattern(counter.filter((v, i) => i % 2 == 0), self.CODE_PATTERN[code]);
+                    if (error < bestMatch.error) {
+                        bestMatch.code = code;
+                        bestMatch.error = error;
+                    }
+                }
+                bestMatch.end = i;
+                if (bestMatch.error > self.AVG_CODE_ERROR) {
+                    return null;
+                }
+                return bestMatch;
+            } else {
+                counterPos++;
+            }
+            counter[counterPos] = 1;
+            isWhite = !isWhite;
         }
     }
-    if (bestMatch.error < epsilon) {
-        return bestMatch;
-    }
+    return null;
 };
 
-I2of5Reader.prototype._decodePayload = function(counters, result, decodedCodes) {
+PlesseyReader.prototype._decodePayload = function(result, decodedCodes) {
     var i,
         self = this,
-        pos = 0,
-        counterLength = counters.length,
-        counterPair = [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0]],
-        codes;
+        code,
+        next = self._findStart().end,
+        final = self._findEnd().start;
 
-    while (pos < counterLength) {
-        for (i = 0; i < 5; i++) {
-            counterPair[0][i] = counters[pos] * this.barSpaceRatio[0];
-            counterPair[1][i] = counters[pos + 1] * this.barSpaceRatio[1];
-            pos += 2;
-        }
-        codes = self._decodePair(counterPair);
-        if (!codes) {
+    while (next < final) {
+        code = self._decodeCode(next);
+        if (!code) {
             return null;
         }
-        for (i = 0; i < codes.length; i++) {
-            result.push(codes[i].code + "");
-            decodedCodes.push(codes[i]);
+        let resultCode = 'X';
+        switch(code.code) {
+            case 10:
+                resultCode = 'A';
+                break;
+            case 11:
+                resultCode = 'B';
+                break;
+            case 12:
+                resultCode = 'C';
+                break;
+            case 13:
+                resultCode = 'D';
+                break;
+            case 14:
+                resultCode = 'E';
+                break;
+            case 15:
+                resultCode = 'F';
+                break;
+            default:
+                resultCode = '' + code.code;
+                break;
         }
+        result.push(resultCode);
+        decodedCodes.push(code);
+        next = code.end;
     }
-    return codes;
+
+    return code;
 };
 
-I2of5Reader.prototype._verifyCounterLength = function(counters) {
-    return (counters.length % 10 === 0);
-};
-
-I2of5Reader.prototype._decode = function() {
+PlesseyReader.prototype._decode = function() {
     var startInfo,
         endInfo,
         self = this,
@@ -290,16 +311,11 @@ I2of5Reader.prototype._decode = function() {
         return null;
     }
 
-    counters = self._fillCounters(startInfo.end, endInfo.start, false);
-    if (!self._verifyCounterLength(counters)) {
-        return null;
-    }
-    code = self._decodePayload(counters, result, decodedCodes);
+    code = self._decodePayload(result, decodedCodes);
     if (!code) {
         return null;
     }
-    if (result.length % 2 !== 0 ||
-            result.length < 6) {
+    if (result.length < 6) { // Good arbritary number for now
         return null;
     }
 
@@ -313,7 +329,7 @@ I2of5Reader.prototype._decode = function() {
     };
 };
 
-I2of5Reader.CONFIG_KEYS = {
+PlesseyReader.CONFIG_KEYS = {
     normalizeBarSpaceWidth: {
         'type': 'boolean',
         'default': false,
@@ -322,4 +338,4 @@ I2of5Reader.CONFIG_KEYS = {
     }
 };
 
-export default I2of5Reader;
+export default PlesseyReader;
