@@ -1,3 +1,5 @@
+> This branch is still WIP, not even sure in which state I left it sadly enough so it might or might not read plessey codes right now..
+
 quaggaJS
 ========
 
